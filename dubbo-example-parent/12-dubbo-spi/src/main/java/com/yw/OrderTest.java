@@ -30,4 +30,13 @@ public class OrderTest {
         Order alipay = loader.getExtension(null);
         System.out.println(alipay.way());
     }
+
+    @Test
+    public void test03() {
+        // 获取到SPI接口Order的loader实例
+        ExtensionLoader<Order> loader = ExtensionLoader.getExtensionLoader(Order.class);
+        // 以下代码会报错
+        Order alipay = loader.getExtension("true");
+        System.out.println(alipay.way());
+    }
 }

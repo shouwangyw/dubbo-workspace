@@ -5,6 +5,8 @@ import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.junit.Test;
 
+import java.util.Set;
+
 /**
  * @author yangwei
  * @date 2020-11-21 10:57
@@ -12,22 +14,29 @@ import org.junit.Test;
 public class OrderTest {
     @Test
     public void test01() {
-        // 获取到SPI接口Order的loader实例
         ExtensionLoader<Order> loader = ExtensionLoader.getExtensionLoader(Order.class);
-        // 获取到Order的自适应实例
         Order order = loader.getAdaptiveExtension();
         URL url = URL.valueOf("xxx://localhost:8080/ooo/xxx");
         System.out.println(order.pay(url));
-        System.out.println(order.way());    // 会报错
+//        System.out.println(order.way());    // 会报错
     }
+
     @Test
     public void test02() {
-        // 获取到SPI接口Order的loader实例
         ExtensionLoader<Order> loader = ExtensionLoader.getExtensionLoader(Order.class);
-        // 获取到Order的自适应实例
         Order order = loader.getAdaptiveExtension();
         URL url = URL.valueOf("xxx://localhost:8080/ooo/xxx?order=alipay");
         System.out.println(order.pay(url));
-//        System.out.println(order.way()); // 报错
+    }
+
+    /**
+     * Wrapper类不是直接扩展类
+     */
+    @Test
+    public void test03() {
+        ExtensionLoader<Order> loader = ExtensionLoader.getExtensionLoader(Order.class);
+        // 获取该SPI接口的所有直接扩展类：即该扩展类直接对该SPI接口进行业务功能上的扩展，可以单独使用
+        Set<String> extensions = loader.getSupportedExtensions();
+        System.out.println(extensions);
     }
 }

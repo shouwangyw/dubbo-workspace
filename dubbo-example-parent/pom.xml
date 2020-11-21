@@ -55,6 +55,9 @@
     <module>12-jdkspi</module>
     <module>12-dubbo-spi</module>
     <module>13-adaptive-method</module>
+    <module>13-adaptive-class</module>
+    <module>14-wrapper</module>
+    <module>15-activate</module>
   </modules>
 
   <dependencies>

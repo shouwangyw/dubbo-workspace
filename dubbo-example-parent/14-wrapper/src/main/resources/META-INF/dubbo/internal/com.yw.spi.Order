@@ -1,0 +1,4 @@
+alipay=com.yw.spi.AlipayOrder
+wechat=com.yw.spi.WechatOrder
+wrapper=com.yw.wrapper.OrderWrapper
+wrapper2=com.yw.wrapper.OrderWrapper2

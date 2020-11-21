@@ -103,7 +103,8 @@ public class ExtensionLoader<T> {
 
     private ExtensionLoader(Class<?> type) {
         this.type = type;
-        objectFactory = (type == ExtensionFactory.class ? null : ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension());
+        objectFactory = (type == ExtensionFactory.class ? null :
+                ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension());
     }
 
     private static <T> boolean withExtensionAnnotation(Class<T> type) {
@@ -852,8 +853,7 @@ public class ExtensionLoader<T> {
      */
     private boolean isWrapperClass(Class<?> clazz) {
         try {
-            // 若当前类中没有仅包含一个SPI接口的带参构造器，
-            // 则这里会抛出异常
+            // 若当前类中没有仅包含一个SPI接口的带参构造器，则这里会抛出异常
             clazz.getConstructor(type);
             return true;
         } catch (NoSuchMethodException e) {
