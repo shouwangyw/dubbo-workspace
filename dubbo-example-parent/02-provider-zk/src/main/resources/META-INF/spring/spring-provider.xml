@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
+  <!-- 指定当前工程在Monitor中显示的名称，一般与工程名相同 -->
+  <dubbo:application name="02-provider-zk"/>
+
+  <!-- 指定服务注册中心：zk单机 -->
+  <dubbo:registry address="zookeeper://192.168.254.120:2181"/>
+  <!--<dubbo:registry protocol="zookeeper" address="192.168.254.120:2181"/>-->
+
+  <!-- 指定服务注册中心：zk集群 -->
+  <!--<dubbo:registry address="zookeeper://192.168.254.128:2181?backup=192.168.254.130:2181,192.168.254.132:2181,192.168.254.129:2181"/>-->
+  <!--<dubbo:registry protocol="zookeeper" address="192.168.254.128:2181,192.168.254.130:2181,192.168.254.132:2181,192.168.254.129:2181"-->
+
+  <!-- 注册服务执行对象 -->
+  <bean id="someService" class="com.yw.provider.SomeServiceImpl"/>
+
+  <!-- 服务暴露 -->
+  <dubbo:service interface="com.yw.service.SomeService" ref="someService"/>
+</beans>

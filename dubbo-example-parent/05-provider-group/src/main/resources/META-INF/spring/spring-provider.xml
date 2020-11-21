@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
+  <!-- 指定当前工程在Monitor中显示的名称，一般与工程名相同 -->
+  <dubbo:application name="05-provider-group"/>
+
+  <!-- 指定服务注册中心：zk单机 -->
+  <dubbo:registry address="zookeeper://192.168.254.120:2181"/>
+
+  <!-- 声明要使用的多种协议 -->
+  <dubbo:protocol name="dubbo" port="20880"/>
+  <dubbo:protocol name="rmi" port="1099"/>
+
+  <!-- 注册Service实现类 -->
+  <bean id="weixinService" class="com.yw.provider.WeixinServiceImpl"/>
+  <bean id="zhifubaoService" class="com.yw.provider.ZhifubaoServiceImpl"/>
+
+  <!-- 服务暴露 -->
+  <dubbo:service interface="com.yw.service.SomeService"
+                 ref="weixinService" group="pay.weixin" protocol="dubbo"/>
+  <dubbo:service interface="com.yw.service.SomeService"
+                 ref="zhifubaoService" group="pay.zhifubao" protocol="rmi"/>
+
+</beans>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
+  <!-- 指定当前工程在Monitor中显示的名称，一般与工程名相同 -->
+  <dubbo:application name="10-consumer-async">
+    <dubbo:parameter key="qos.port" value="55555"/>
+  </dubbo:application>
+
+  <!-- 指定服务注册中心：zk单机 -->
+  <dubbo:registry address="zookeeper://192.168.254.120:2181"/>
+
+  <!-- 订阅服务 -->
+  <dubbo:reference id="otherService" check="false" timeout="20000"
+                   interface="com.yw.service.OtherService">
+    <dubbo:method name="doThird" async="true"/>
+    <dubbo:method name="doFourth" async="true"/>
+  </dubbo:reference>
+
+</beans>

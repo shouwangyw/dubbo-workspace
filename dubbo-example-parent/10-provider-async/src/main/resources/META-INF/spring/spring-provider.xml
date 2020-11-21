@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
+  <!-- 指定当前工程在Monitor中显示的名称，一般与工程名相同 -->
+  <dubbo:application name="10-provider-async"/>
+
+  <!-- 指定服务注册中心：zk单机 -->
+  <dubbo:registry address="zookeeper://192.168.254.120:2181"/>
+
+  <!-- 注册服务执行对象 -->
+  <bean id="otherService" class="com.yw.service.OtherServiceImpl"/>
+
+  <!-- 服务暴露 -->
+  <dubbo:service interface="com.yw.service.OtherService" ref="otherService"/>
+
+</beans>

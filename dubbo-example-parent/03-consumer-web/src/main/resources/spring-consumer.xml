@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+       xmlns:mvc="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+  <!-- 指定当前工程在Monitor中显示的名称，一般与工程名相同 -->
+  <dubbo:application name="03-consumer-web"/>
+
+  <!-- 指定服务注册中心：zk单机 -->
+  <dubbo:registry address="zookeeper://192.168.254.120:2181"/>
+  <!--<dubbo:registry protocol="zookeeper" address="192.168.254.120:2181"/>-->
+
+  <!-- 指定服务注册中心：zk集群 -->
+  <!--<dubbo:registry address="zookeeper://192.168.254.128:2181?backup=192.168.254.130:2181,192.168.254.132:2181,192.168.254.129:2181"/>-->
+  <!--<dubbo:registry protocol="zookeeper" address="192.168.254.128:2181,192.168.254.130:2181,192.168.254.132:2181,192.168.254.129:2181"-->
+
+  <!-- 订阅服务 -->
+  <dubbo:reference id="someService" interface="com.yw.service.SomeService"/>
+
+  <!-- 注册处理器 -->
+  <mvc:component-scan base-package="com.yw.controller"/>
+</beans>

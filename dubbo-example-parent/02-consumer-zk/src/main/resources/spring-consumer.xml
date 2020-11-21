@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
+    <!-- 指定当前工程在Monitor中显示的名称，一般与工程名相同 -->
+    <dubbo:application name="02-consumer-zk">
+        <dubbo:parameter key="qos.port" value="55555"/>
+    </dubbo:application>
+
+    <!-- 指定服务注册中心：zk单机 -->
+    <dubbo:registry address="zookeeper://192.168.254.120:2181"/>
+    <!--<dubbo:registry protocol="zookeeper" address="192.168.254.120:2181"/>-->
+
+    <!-- 指定服务注册中心：zk集群 -->
+    <!--<dubbo:registry address="zookeeper://192.168.254.128:2181?backup=192.168.254.130:2181,192.168.254.132:2181,192.168.254.129:2181"/>-->
+    <!--<dubbo:registry protocol="zookeeper" address="192.168.254.128:2181,192.168.254.130:2181,192.168.254.132:2181,192.168.254.129:2181"-->
+
+    <!--&lt;!&ndash;  订阅服务 &ndash;&gt;-->
+    <!--<dubbo:reference id="someService" check="false"-->
+                     <!--interface="com.yw.service.SomeService"/>-->
+
+    <!-- 订阅服务：指定调用服务的所有方法均采用轮询负载均衡算法 -->
+    <!--<dubbo:reference id="someService" check="false"-->
+                     <!--interface="com.yw.service.SomeService"-->
+                     <!--loadbalance="roundrobin"/>-->
+
+    <!-- 订阅服务：指定不同的服务方法采用不同的负载均衡算法 -->
+    <!--<dubbo:reference id="someService" check="false"-->
+                     <!--interface="com.yw.service.SomeService">-->
+        <!--<dubbo:method name="hello" loadbalance="roundrobin"/>-->
+        <!--<dubbo:method name="doFirst" loadbalance="random"/>-->
+        <!--<dubbo:method name="doFirst" loadbalance="leastactive"/>-->
+    <!--</dubbo:reference>-->
+
+    <!-- 订阅服务：设置对指定服务器最多调用3次，一次正常调用，2次重试 -->
+    <!--<dubbo:reference id="someService" check="false"-->
+            <!--interface="com.yw.service.SomeService"-->
+            <!--retries="2"/>-->
+
+    <!--<dubbo:reference id="someService" check="false"-->
+            <!--interface="com.yw.service.SomeService">-->
+        <!--&lt;!&ndash; 指定对hello方法最多调用3次，一次正常调用，2次重试 &ndash;&gt;-->
+        <!--<dubbo:method name="hello" retries="2"/>-->
+    <!--</dubbo:reference>-->
+
+    <!-- 指定要调用的服务器集群容错机制采用failfast -->
+    <dubbo:reference id="someService" check="false"
+                     interface="com.yw.service.SomeService"
+                     cluster="failfast"/>
+
+</beans>
