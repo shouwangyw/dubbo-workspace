@@ -24,7 +24,7 @@
     <!-- provider's application name, used for tracing dependency relationship -->
     <dubbo:application name="demo-provider"/>
 
-    <dubbo:registry address="zookeeper://192.168.254.120:2181" />
+    <dubbo:registry address="zookeeper://100.120.7.151:2181" />
 
     <!-- use dubbo protocol to export service on port 20880 -->
     <dubbo:protocol name="dubbo"/>

@@ -300,6 +300,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         checkProtocol();
         checkApplication();
         // if protocol is not injvm checkRegistry
+        // 若不是本地服务暴露，则检测所有注册中心的可用性
         if (!isOnlyInJvm()) {
             checkRegistry();
         }
@@ -368,6 +369,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     public synchronized void export() {
+        // 检测所有的注册中心可用性，并进一步完善<dubbo:service/>的配置
         checkAndUpdateSubConfigs();
 
         if (!shouldExport()) {

@@ -194,16 +194,15 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      */
     protected void checkRegistry() {
         loadRegistriesFromBackwardConfig();
-
         convertRegistryIdsToRegistries();
-
+        // 遍历所有注册中心，只要有一个不可用，则直接抛出异常
         for (RegistryConfig registryConfig : registries) {
             if (!registryConfig.isValid()) {
                 throw new IllegalStateException("No registry config found or it's not a valid config! " +
                         "The registry config is: " + registryConfig);
             }
         }
-
+        // 使用注册中心作为配置中心，如果有必要的话（没有定义配置中心）
         useRegistryForConfigIfNecessary();
     }
 
@@ -272,10 +271,10 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         if (configCenter == null) {
             ConfigManager.getInstance().getConfigCenter().ifPresent(cc -> this.configCenter = cc);
         }
-
         if (this.configCenter != null) {
             // TODO there may have duplicate refresh
             this.configCenter.refresh();
+            // 从配置中心读取动态配置数据，准备运行环境
             prepareEnvironment();
         }
         ConfigManager.getInstance().refreshAll();
@@ -286,6 +285,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             if (!configCenter.checkOrUpdateInited()) {
                 return;
             }
+            // 获取动态配置
             DynamicConfiguration dynamicConfiguration = getDynamicConfiguration(configCenter.toUrl());
             String configContent = dynamicConfiguration.getProperties(configCenter.getConfigFile(), configCenter.getGroup());
 
@@ -308,9 +308,10 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     }
 
     private DynamicConfiguration getDynamicConfiguration(URL url) {
+        // 获取动态配置工厂DynamicConfigurationFactory的名称为zookeeper的扩展类实例
         DynamicConfigurationFactory factories = ExtensionLoader
                 .getExtensionLoader(DynamicConfigurationFactory.class)
-                .getExtension(url.getProtocol());
+                .getExtension(url.getProtocol());  //
         DynamicConfiguration configuration = factories.getDynamicConfiguration(url);
         Environment.getInstance().setDynamicConfiguration(configuration);
         return configuration;
@@ -619,10 +620,12 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             Environment.getInstance().getDynamicConfiguration().orElseGet(() -> {
                 ConfigManager configManager = ConfigManager.getInstance();
                 ConfigCenterConfig cc = configManager.getConfigCenter().orElse(new ConfigCenterConfig());
+                // 使用注册中心初始化配置中心
                 cc.setProtocol(rc.getProtocol());
                 cc.setAddress(rc.getAddress());
                 cc.setHighestPriority(false);
                 setConfigCenter(cc);
+                // 开启配置中心
                 startConfigCenter();
                 return null;
             });

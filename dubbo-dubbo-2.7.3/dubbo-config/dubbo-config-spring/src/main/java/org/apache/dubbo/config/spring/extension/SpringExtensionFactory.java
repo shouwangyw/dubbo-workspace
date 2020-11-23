@@ -68,12 +68,12 @@ public class SpringExtensionFactory implements ExtensionFactory {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T getExtension(Class<T> type, String name) {
-
         //SPI should be get from SpiExtensionFactory
+        // 若当前type为SPI接口，则直接结束，因为Spring方式不处理SPI接口实例的创建
         if (type.isInterface() && type.isAnnotationPresent(SPI.class)) {
             return null;
         }
-
+        // 遍历所有Spring容器，根据名称从中查找实例
         for (ApplicationContext context : CONTEXTS) {
             if (context.containsBean(name)) {
                 Object bean = context.getBean(name);
@@ -82,13 +82,12 @@ public class SpringExtensionFactory implements ExtensionFactory {
                 }
             }
         }
-
         logger.warn("No spring extension (bean) named:" + name + ", try to find an extension (bean) of type " + type.getName());
-
+        // 这个type不能是Object
         if (Object.class == type) {
             return null;
         }
-
+        // 遍历所有Spring容器，根据类型从中查找实例
         for (ApplicationContext context : CONTEXTS) {
             try {
                 return context.getBean(type);

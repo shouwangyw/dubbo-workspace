@@ -33,6 +33,7 @@ public abstract class AbstractCompiler implements Compiler {
     @Override
     public Class<?> compile(String code, ClassLoader classLoader) {
         code = code.trim();
+        // 从code中将package信息摘出
         Matcher matcher = PACKAGE_PATTERN.matcher(code);
         String pkg;
         if (matcher.find()) {
@@ -40,6 +41,7 @@ public abstract class AbstractCompiler implements Compiler {
         } else {
             pkg = "";
         }
+        // 从code中将class信息摘出
         matcher = CLASS_PATTERN.matcher(code);
         String cls;
         if (matcher.find()) {
@@ -47,14 +49,16 @@ public abstract class AbstractCompiler implements Compiler {
         } else {
             throw new IllegalArgumentException("No such class name in " + code);
         }
+        // 拼接出要加载的全限定性类名
         String className = pkg != null && pkg.length() > 0 ? pkg + "." + cls : cls;
         try {
+            // 加载名称为className的类
             return Class.forName(className, true, org.apache.dubbo.common.utils.ClassUtils.getCallerClassLoader(getClass()));
         } catch (ClassNotFoundException e) {
             if (!code.endsWith("}")) {
                 throw new IllegalStateException("The java code not endsWith \"}\", code: \n" + code + "\n");
             }
-            try {
+            try {  // 调用JavassistCompiler的doCompile()，对code使用javassist技术进行动态编译
                 return doCompile(className, code);
             } catch (RuntimeException t) {
                 throw t;

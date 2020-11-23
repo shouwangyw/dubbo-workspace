@@ -16,17 +16,17 @@
  */
 package org.apache.dubbo.common.extension;
 
+import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.logger.Logger;
+import org.apache.dubbo.common.logger.LoggerFactory;
+import org.apache.dubbo.common.utils.StringUtils;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import org.apache.dubbo.common.URL;
-import org.apache.dubbo.common.logger.Logger;
-import org.apache.dubbo.common.logger.LoggerFactory;
-import org.apache.dubbo.common.utils.StringUtils;
 
 /**
  * Code generator for Adaptive class
@@ -77,6 +77,7 @@ public class AdaptiveClassCodeGenerator {
      * test if given type has at least one method annotated with <code>SPI</code>
      */
     private boolean hasAdaptiveMethod() {
+        // anyMatch() 只要有一个流元素能够匹配成功，则该方法返回true
         return Arrays.stream(type.getMethods()).anyMatch(m -> m.isAnnotationPresent(Adaptive.class));
     }
     
@@ -85,10 +86,12 @@ public class AdaptiveClassCodeGenerator {
      */
     public String generate() {
         // no need to generate adaptive class since there's no adaptive method found.
+        // 若当前SPI接口中不包含@Adaptive方法，则抛出异常
         if (!hasAdaptiveMethod()) {
             throw new IllegalStateException("No adaptive method exist on extension " + type.getName() + ", refuse to create the adaptive class!");
         }
 
+        // 通过字符串拼接方式，生成代码
         StringBuilder code = new StringBuilder();
         code.append(generatePackageInfo());
         code.append(generateImports());

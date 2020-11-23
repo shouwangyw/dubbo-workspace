@@ -103,8 +103,8 @@ public class ExtensionLoader<T> {
 
     private ExtensionLoader(Class<?> type) {
         this.type = type;
-        objectFactory = (type == ExtensionFactory.class ? null :
-                ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension());
+        // 用于创建当前type类型扩展类实例的
+        objectFactory = (type == ExtensionFactory.class ? null : ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension());
     }
 
     private static <T> boolean withExtensionAnnotation(Class<T> type) {
@@ -335,8 +335,8 @@ public class ExtensionLoader<T> {
      * Find the extension with the given name. If the specified name is not found, then {@link IllegalStateException}
      * will be thrown.
      */
-    // 获取指定名称的扩展类实例
     @SuppressWarnings("unchecked")
+    // 获取指定名称的扩展类实例
     public T getExtension(String name) {
         if (StringUtils.isEmpty(name)) {
             throw new IllegalArgumentException("Extension name == null");
@@ -350,6 +350,7 @@ public class ExtensionLoader<T> {
             synchronized (holder) {
                 instance = holder.get();
                 if (instance == null) {
+                    // 创建指定名称的扩展类实例
                     instance = createExtension(name);
                     holder.set(instance);
                 }
@@ -378,6 +379,7 @@ public class ExtensionLoader<T> {
     }
 
     public Set<String> getSupportedExtensions() {
+        // 返回当前SPI接口的所有直接扩展类
         Map<String, Class<?>> clazzes = getExtensionClasses();
         return Collections.unmodifiableSet(new TreeSet<>(clazzes.keySet()));
     }
@@ -527,23 +529,30 @@ public class ExtensionLoader<T> {
 
     @SuppressWarnings("unchecked")
     private T createExtension(String name) {
+        //  getExtensionClasses() 返回当前SPI接口的所有直接扩展类，是个map
+        // 其key为扩展名，value为直接扩展类的class
         Class<?> clazz = getExtensionClasses().get(name);
         if (clazz == null) {
             throw findException(name);
         }
         try {
+            // 从缓存中获取指定类对应的实例，若为null，则创建一个实例
             T instance = (T) EXTENSION_INSTANCES.get(clazz);
             if (instance == null) {
                 EXTENSION_INSTANCES.putIfAbsent(clazz, clazz.newInstance());
                 instance = (T) EXTENSION_INSTANCES.get(clazz);
             }
+            // 调用instance实例的setter完成注入
             injectExtension(instance);
+            // 获取当前SPI接口类型的所有wrapper类
             Set<Class<?>> wrapperClasses = cachedWrapperClasses;
+            // 遍历所有wrapper，逐层对instance实例进行包装
             if (CollectionUtils.isNotEmpty(wrapperClasses)) {
                 for (Class<?> wrapperClass : wrapperClasses) {
                     instance = injectExtension((T) wrapperClass.getConstructor(type).newInstance(instance));
                 }
             }
+            // 返回的是包装过的instance
             return instance;
         } catch (Throwable t) {
             throw new IllegalStateException("Extension instance (name: " + name + ", class: " +
@@ -554,22 +563,30 @@ public class ExtensionLoader<T> {
     private T injectExtension(T instance) {
         try {
             if (objectFactory != null) {
+                // 遍历当前instance中的所有方法
                 for (Method method : instance.getClass().getMethods()) {
+                    // 仅对setter方法进行处理
                     if (isSetter(method)) {
                         /**
                          * Check {@link DisableInject} to see if we need auto injection for this property
                          */
+                        // 若一个setter方法上有@DisableInject注解，则不进行注入
                         if (method.getAnnotation(DisableInject.class) != null) {
                             continue;
                         }
+                        // 获取当前setter方法的参数类型
                         Class<?> pt = method.getParameterTypes()[0];
+                        // 若setter方法的参数类型为基本数据类型，则不进行注入
                         if (ReflectUtils.isPrimitives(pt)) {
                             continue;
                         }
                         try {
+                            // 获取setter方法的形参名称
                             String property = getSetterProperty(method);
+                            // 获取要注入的实例，即setter的实参
                             Object object = objectFactory.getExtension(pt, property);
                             if (object != null) {
+                                // 调用setter完成注入
                                 method.invoke(instance, object);
                             }
                         } catch (Exception e) {
@@ -591,7 +608,10 @@ public class ExtensionLoader<T> {
      * return "", if setter name with length less than 3
      */
     private String getSetterProperty(Method method) {
-        return method.getName().length() > 3 ? method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4) : "";
+        // 若方法名长度大于3，则取出第4个字母，变为小写后，再拼接上后面所有的字符串
+        // setZookeeperTransporter() =>  zookeeperTransporter
+        return method.getName().length() > 3 ?
+                method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4) : "";
     }
 
     /**
@@ -604,9 +624,9 @@ public class ExtensionLoader<T> {
      * 3, only has one parameter
      */
     private boolean isSetter(Method method) {
-        return method.getName().startsWith("set")
-                && method.getParameterTypes().length == 1
-                && Modifier.isPublic(method.getModifiers());
+        return method.getName().startsWith("set")              // 方法名以set开头
+                && method.getParameterTypes().length == 1      // 方法有且仅有一个参数
+                && Modifier.isPublic(method.getModifiers());   // 方法权限为public
     }
 
     private Class<?> getExtensionClass(String name) {
@@ -751,7 +771,7 @@ public class ExtensionLoader<T> {
         } else if (isWrapperClass(clazz)) {  // 判断当前类是否是wrapper类
             // 缓存这个类
             cacheWrapperClass(clazz);
-        } else {  // 处理普通扩展类与activate类的情况
+        } else {  // 处理普通扩展类是activate类的情况
             // 验证扩展类是否具有无参构造器。
             // 若没有，则直接抛出异常，后面的代码就不会执行了。若有，则什么也不做
             clazz.getConstructor();
@@ -795,6 +815,7 @@ public class ExtensionLoader<T> {
     private void saveInExtensionClass(Map<String, Class<?>> extensionClasses, Class<?> clazz, String name) {
         Class<?> c = extensionClasses.get(name);
         if (c == null) {
+            // 每一个扩展名都会与class配对写入到map中
             extensionClasses.put(name, clazz);
         } else if (c != clazz) {
             throw new IllegalStateException("Duplicate extension " + type.getName() + " name " + name + " on " + c.getName() + " and " + clazz.getName());
@@ -853,7 +874,8 @@ public class ExtensionLoader<T> {
      */
     private boolean isWrapperClass(Class<?> clazz) {
         try {
-            // 若当前类中没有仅包含一个SPI接口的带参构造器，则这里会抛出异常
+            // 若当前类中没有仅包含一个SPI接口的带参构造器，
+            // 则这里会抛出异常
             clazz.getConstructor(type);
             return true;
         } catch (NoSuchMethodException e) {
@@ -902,9 +924,14 @@ public class ExtensionLoader<T> {
     }
 
     private Class<?> createAdaptiveExtensionClass() {
+        // 生成adaptive类代码
         String code = new AdaptiveClassCodeGenerator(type, cachedDefaultName).generate();
         ClassLoader classLoader = findClassLoader();
-        org.apache.dubbo.common.compiler.Compiler compiler = ExtensionLoader.getExtensionLoader(org.apache.dubbo.common.compiler.Compiler.class).getAdaptiveExtension();
+        // 获取到Compiler类型的adaptive类实例
+        org.apache.dubbo.common.compiler.Compiler compiler = ExtensionLoader
+                                            .getExtensionLoader(org.apache.dubbo.common.compiler.Compiler.class)
+                                            .getAdaptiveExtension();
+        // 调用adaptiveCompiler的compile()
         return compiler.compile(code, classLoader);
     }
 

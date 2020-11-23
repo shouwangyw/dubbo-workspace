@@ -58,6 +58,7 @@
     <module>13-adaptive-class</module>
     <module>14-wrapper</module>
     <module>15-activate</module>
+    <module>16-javassist</module>
   </modules>
 
   <dependencies>
