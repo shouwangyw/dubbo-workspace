@@ -194,7 +194,9 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      */
     protected void checkRegistry() {
         loadRegistriesFromBackwardConfig();
+
         convertRegistryIdsToRegistries();
+
         // 遍历所有注册中心，只要有一个不可用，则直接抛出异常
         for (RegistryConfig registryConfig : registries) {
             if (!registryConfig.isValid()) {
@@ -271,6 +273,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         if (configCenter == null) {
             ConfigManager.getInstance().getConfigCenter().ifPresent(cc -> this.configCenter = cc);
         }
+
         if (this.configCenter != null) {
             // TODO there may have duplicate refresh
             this.configCenter.refresh();
@@ -327,24 +330,38 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     protected List<URL> loadRegistries(boolean provider) {
         // check && override if necessary
         List<URL> registryList = new ArrayList<URL>();
+        // 若配置文件中配置了<dubbo:registry/>标签，则获取所有注册中心的url
+        // 由于dubbo支持多注册中心，所以可能会存在多个<dubbo:registry/>标签
         if (CollectionUtils.isNotEmpty(registries)) {
+            // 遍历所有<dubbo:registry/>标签
             for (RegistryConfig config : registries) {
+                // 获取<dubbo:registry/>的address属性
                 String address = config.getAddress();
+                // 若没有指定address，则返回一个可以匹配所有ip的地址
                 if (StringUtils.isEmpty(address)) {
                     address = ANYHOST_VALUE;
                 }
+                // 若address不等于N/A，即不是直接方式
                 if (!RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
+                    // 定义一个map，其中用于存放来自于各种标签的属性及其它属性值，
+                    // 这些值将来要作为URL中的元数据出现
                     Map<String, String> map = new HashMap<String, String>();
+                    // 将<dubbo:application/>标签中的属性写入到map
                     appendParameters(map, application);
+                    // 将<dubbo:registry/>标签中的属性写入到map
                     appendParameters(map, config);
                     map.put(PATH_KEY, RegistryService.class.getName());
+                    // 将运行时的一些参数值写入到map
                     appendRuntimeParameters(map);
                     if (!map.containsKey(PROTOCOL_KEY)) {
                         map.put(PROTOCOL_KEY, DUBBO_PROTOCOL);
                     }
+                    // 获取当前的address属性解析出的所有注册中心URL
                     List<URL> urls = UrlUtils.parseURLs(address, map);
 
                     for (URL url : urls) {
+                        // URL的标准化：将所有注册中心地址变为了如下形式
+                        //  registry://host:port/。。。.RegistryService?。。。&registry=zookeeper&。。。
                         url = URLBuilder.from(url)
                                 .addParameter(REGISTRY_KEY, url.getProtocol())
                                 .setProtocol(REGISTRY_PROTOCOL)
@@ -408,10 +425,14 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     }
 
     static void appendRuntimeParameters(Map<String, String> map) {
+        // 将dubbo协议版本写入到map
         map.put(DUBBO_VERSION_KEY, Version.getProtocolVersion());
+        // 将dubbo框架版本写入到map
         map.put(RELEASE_KEY, Version.getVersion());
+        // 将当前时间戳写入到map
         map.put(TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
         if (ConfigUtils.getPid() > 0) {
+            // 将当前进程ip写入到map
             map.put(PID_KEY, String.valueOf(ConfigUtils.getPid()));
         }
     }

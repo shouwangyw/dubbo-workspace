@@ -372,10 +372,11 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         // 检测所有的注册中心可用性，并进一步完善<dubbo:service/>的配置
         checkAndUpdateSubConfigs();
 
+        // 若设置的export为false，则不进行服务暴露，直接结束
         if (!shouldExport()) {
             return;
         }
-
+        // 若设置了delay属性，则进行延迟暴露
         if (shouldDelay()) {
             DELAY_EXPORT_EXECUTOR.schedule(this::doExport, getDelay(), TimeUnit.MILLISECONDS);
         } else {
@@ -391,6 +392,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     @Override
     public Boolean getExport() {
+        // 若<dubbo:service/>中没有设置export属性，但设置了provider属性，
+        // 则返回<dubbo:provider/>的export属性值
+        // 若<dubbo:service/>中指定了export属性，则直接返回
         return (export == null && provider != null) ? provider.getExport() : export;
     }
 
@@ -411,11 +415,14 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         if (exported) {
             return;
         }
+        // 修改服务暴露状态变量
         exported = true;
-
+        // URL的构成为：  protocol://host:port/path?元数据
+        // 若<dubbo:service/>中没有指定path属性，则取interface属性的值
         if (StringUtils.isEmpty(path)) {
             path = interfaceName;
         }
+        // 将注册中心与服务暴露协议相结合进行服务暴露
         doExportUrls();
     }
 
@@ -453,11 +460,14 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void doExportUrls() {
+        // 获取所有注册中心的标准化URL
         List<URL> registryURLs = loadRegistries(true);
+        // 遍历当前服务所支持的所有服务暴露协议
         for (ProtocolConfig protocolConfig : protocols) {
             String pathKey = URL.buildKey(getContextPath(protocolConfig).map(p -> p + "/" + path).orElse(path), group, version);
             ProviderModel providerModel = new ProviderModel(pathKey, ref, interfaceClass);
             ApplicationModel.initProviderModel(pathKey, providerModel);
+            // 使用当前遍历的服务暴露协议，将服务暴露到所有注册中心
             doExportUrlsFor1Protocol(protocolConfig, registryURLs);
         }
     }

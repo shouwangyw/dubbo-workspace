@@ -30,6 +30,7 @@ import java.util.List;
  *
  * @see org.apache.dubbo.rpc.cluster.Cluster#join(Directory)
  */
+// 我们可以将Directory理解为，提供某一具体服务的Invoker列表
 public interface Directory<T> extends Node {
 
     /**

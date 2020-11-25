@@ -105,12 +105,15 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         return service;
     }
 
+    // 当Spring容器被刷新时会触发该方法的执行
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
+        // 若当前服务尚未暴露，且也没有被取消暴露，则进行服务暴露
         if (!isExported() && !isUnexported()) {
             if (logger.isInfoEnabled()) {
                 logger.info("The service ready on spring started. service: " + getInterface());
             }
+            // 服务暴露
             export();
         }
     }
@@ -333,6 +336,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
      */
     @Override
     public void export() {
+        // 服务暴露
         super.export();
         // Publish ServiceBeanExportedEvent
         publishExportEvent();

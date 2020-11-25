@@ -52,7 +52,7 @@ public interface Invocation {
     Object[] getArguments();
 
     /**
-     * get attachments.
+     * get attachments(附件).
      *
      * @return attachments.
      * @serial

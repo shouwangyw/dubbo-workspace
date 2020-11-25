@@ -29,7 +29,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * StaticDirectory
+ * StaticDirectory  Invoker静态列表
  */
 public class StaticDirectory<T> extends AbstractDirectory<T> {
     private static final Logger logger = LoggerFactory.getLogger(StaticDirectory.class);

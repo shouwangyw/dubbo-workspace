@@ -160,12 +160,16 @@ public class UrlUtils {
         if (address == null || address.length() == 0) {
             return null;
         }
+        // 使用竖线(|) 或 分号(;) 对address进行分隔，解析出多个注册中心地址
         String[] addresses = REGISTRY_SPLIT_PATTERN.split(address);
         if (addresses == null || addresses.length == 0) {
             return null; //here won't be empty
         }
         List<URL> registries = new ArrayList<URL>();
+        // 遍历所有当前解析出的注册中心地址
         for (String addr : addresses) {
+            // parseURL() 将注册中心地址全部变为如下形式：
+            // zookeeper://zkOS1:2181?backup=zkOS2:2181,zkOS3:2181
             registries.add(parseURL(addr, defaults));
         }
         return registries;
