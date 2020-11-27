@@ -33,6 +33,7 @@ public class DelegateProviderMetaDataInvoker<T> implements Invoker {
 
     public DelegateProviderMetaDataInvoker(Invoker<T> invoker, ServiceConfig metadata) {
         this.invoker = invoker;
+        // <dubbo:service/>中的数据
         this.metadata = metadata;
     }
 

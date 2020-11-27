@@ -82,11 +82,14 @@ public class ZookeeperRegistry extends FailbackRegistry {
             group = PATH_SEPARATOR + group;
         }
         this.root = group;
+        // 使用Curator客户端连接zk，形成zkClient客户端实例
         zkClient = zookeeperTransporter.connect(url);
+        // 添加监听
         zkClient.addStateListener(state -> {
+            // 若连接失败，且仍在重试范围内，则重连
             if (state == StateListener.RECONNECTED) {
                 try {
-                    recover();
+                    recover();  // 重连
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }

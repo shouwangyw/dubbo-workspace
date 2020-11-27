@@ -417,6 +417,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
         // 修改服务暴露状态变量
         exported = true;
+
         // URL的构成为：  protocol://host:port/path?元数据
         // 若<dubbo:service/>中没有指定path属性，则取interface属性的值
         if (StringUtils.isEmpty(path)) {
@@ -473,11 +474,13 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
+        // 获取服务暴露协议
         String name = protocolConfig.getName();
         if (StringUtils.isEmpty(name)) {
             name = DUBBO;
         }
 
+        // 创建一个map，用于存放各种属性，将来要作为URL中的元数据
         Map<String, String> map = new HashMap<String, String>();
         map.put(SIDE_KEY, PROVIDER_SIDE);
 
@@ -571,35 +574,45 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             }
         }
         // export service
+        // 获取到host与port
         String host = this.findConfigedHosts(protocolConfig, registryURLs, map);
         Integer port = this.findConfigedPorts(protocolConfig, name, map);
+        // 形成服务暴露URL  protocol://host:port/path?map中的key-value形成的元数据
         URL url = new URL(name, host, port, getContextPath(protocolConfig).map(p -> p + "/" + path).orElse(path), map);
 
+        // 我们可以通过自定义某一SPI接口实现类的方式来扩展Dubbo的功能，同时，也可以
+        // 对现有扩展类进行再配置：只需要定义ConfiguratorFactory SPI接口的实现类，去实现再配置即可
         if (ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class)
-                .hasExtension(url.getProtocol())) {
+                .hasExtension(url.getProtocol())) {  // 判断是否具有dubbo协议的再扩展类
             url = ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class)
                     .getExtension(url.getProtocol()).getConfigurator(url).configure(url);
         }
 
+        // 获取<dubbo:service/>中的scope属性
         String scope = url.getParameter(SCOPE_KEY);
         // don't export when none is configured
+        // 若scope的值不为none，则进行服务暴露
         if (!SCOPE_NONE.equalsIgnoreCase(scope)) {
 
             // export to local if the config is not remote (export to remote only when config is remote)
+            // 若scope的值不为remote，则进行本地暴露
             if (!SCOPE_REMOTE.equalsIgnoreCase(scope)) {
-                exportLocal(url);
+                exportLocal(url);  // 本地暴露
             }
             // export to remote if the config is not local (export to local only when config is local)
+            // 若scope的值不为local，则进行远程暴露
             if (!SCOPE_LOCAL.equalsIgnoreCase(scope)) {
                 if (!isOnlyInJvm() && logger.isInfoEnabled()) {
                     logger.info("Export dubbo service " + interfaceClass.getName() + " to url " + url);
                 }
                 if (CollectionUtils.isNotEmpty(registryURLs)) {
+                    // 遍历所有注册中心
                     for (URL registryURL : registryURLs) {
                         //if protocol is only injvm ,not register
                         if (LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) {
                             continue;
                         }
+
                         url = url.addParameterIfAbsent(DYNAMIC_KEY, registryURL.getParameter(DYNAMIC_KEY));
                         URL monitorUrl = loadMonitor(registryURL);
                         if (monitorUrl != null) {
@@ -615,16 +628,18 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                             registryURL = registryURL.addParameter(PROXY_KEY, proxy);
                         }
 
+                        // 生成invoker，这里使用的url中包含了注册中心的数据与提供者的数据
                         Invoker<?> invoker = PROXY_FACTORY.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(EXPORT_KEY, url.toFullString()));
+                        // 将原始的invoker进行了又一次封装，其中包含了<dubbo:service/>标签中的元数据
                         DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
-
+                        // 远程暴露（完成三项任务：注册到zk，生成exporter并写入到一个缓存map，创建并启动一个netty server)
                         Exporter<?> exporter = protocol.export(wrapperInvoker);
                         exporters.add(exporter);
                     }
-                } else {
+                } else {  // 处理没有注册中心的情况，即直连的情况
                     Invoker<?> invoker = PROXY_FACTORY.getInvoker(ref, (Class) interfaceClass, url);
                     DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
-
+                    // 远程暴露（完成两项任务：生成exporter并写入到一个缓存map，创建并启动一个netty server)
                     Exporter<?> exporter = protocol.export(wrapperInvoker);
                     exporters.add(exporter);
                 }

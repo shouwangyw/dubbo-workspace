@@ -284,6 +284,7 @@ public class DubboProtocol extends AbstractProtocol {
 
         // export service.
         String key = serviceKey(url);
+        // 创建服务暴露对象，并写入到缓存map
         DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
         exporterMap.put(key, exporter);
 
@@ -303,16 +304,17 @@ public class DubboProtocol extends AbstractProtocol {
             }
         }
 
-        openServer(url);
+        openServer(url);  // 创建并启动一个Netty Server
         optimizeSerialization(url);
 
         return exporter;
     }
 
     private void openServer(URL url) {
-        // find server.
+        // find server.  key的值为当前提供者的ip与当前服务暴露协议的port
         String key = url.getAddress();
         //client can export a service which's only for server to invoke
+        // 获取isServer的值，为true即表明当前Server是一个提供者
         boolean isServer = url.getParameter(IS_SERVER_KEY, true);
         if (isServer) {
             ExchangeServer server = serverMap.get(key);
@@ -320,11 +322,15 @@ public class DubboProtocol extends AbstractProtocol {
                 synchronized (this) {
                     server = serverMap.get(key);
                     if (server == null) {
+                        // 创建一个ExchangeServer
+                        // 一个ExchangeServer仅会负责一个NettyServer的同异步转换工作，
+                        // 即一个ExchangeServer就会对应一个NettyServer
                         serverMap.put(key, createServer(url));
                     }
                 }
             } else {
                 // server supports reset, use together with override
+                // 重置server(更新url的值)
                 server.reset(url);
             }
         }

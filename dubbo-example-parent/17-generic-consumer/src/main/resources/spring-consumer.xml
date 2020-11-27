@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
+  <dubbo:application name="17-generic-provider">
+    <dubbo:parameter key="qos.port" value="33333" />
+  </dubbo:application>
+  <!-- 指定服务注册中心：zk单机 -->
+  <dubbo:registry address="zookeeper://100.120.7.151:2181" />
+  <!-- 泛化引用 -->
+  <dubbo:reference id="someService" interface="com.yw.service.SomeService"
+                   check="false" generic="true" />
+</beans>
