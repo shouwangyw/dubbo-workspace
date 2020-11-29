@@ -18,6 +18,7 @@ package org.apache.dubbo.demo.consumer;
 
 import org.apache.dubbo.demo.DemoService;
 
+import org.apache.dubbo.demo.SomeService;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class ConsumerApplication {
@@ -31,5 +32,8 @@ public class ConsumerApplication {
         DemoService demoService = context.getBean("demoService", DemoService.class);
         String hello = demoService.sayHello("world");
         System.out.println("result =================== " + hello);
+        SomeService someService = context.getBean("someService", SomeService.class);
+        String hi = someService.sayHi("world");
+        System.out.println("result =================== " + hi);
     }
 }

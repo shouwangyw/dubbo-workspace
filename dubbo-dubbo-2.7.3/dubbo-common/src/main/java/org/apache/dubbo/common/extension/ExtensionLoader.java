@@ -335,8 +335,8 @@ public class ExtensionLoader<T> {
      * Find the extension with the given name. If the specified name is not found, then {@link IllegalStateException}
      * will be thrown.
      */
-    @SuppressWarnings("unchecked")
     // 获取指定名称的扩展类实例
+    @SuppressWarnings("unchecked")
     public T getExtension(String name) {
         if (StringUtils.isEmpty(name)) {
             throw new IllegalArgumentException("Extension name == null");
@@ -374,6 +374,7 @@ public class ExtensionLoader<T> {
         if (StringUtils.isEmpty(name)) {
             throw new IllegalArgumentException("Extension name == null");
         }
+        // 获取当前SPI接口的指定名称的扩展类
         Class<?> c = this.getExtensionClass(name);
         return c != null;
     }
@@ -610,8 +611,7 @@ public class ExtensionLoader<T> {
     private String getSetterProperty(Method method) {
         // 若方法名长度大于3，则取出第4个字母，变为小写后，再拼接上后面所有的字符串
         // setZookeeperTransporter() =>  zookeeperTransporter
-        return method.getName().length() > 3 ?
-                method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4) : "";
+        return method.getName().length() > 3 ? method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4) : "";
     }
 
     /**
@@ -636,6 +636,7 @@ public class ExtensionLoader<T> {
         if (name == null) {
             throw new IllegalArgumentException("Extension name == null");
         }
+        // getExtensionClasses() 获取当前SPI接口的所有直接扩展类
         return getExtensionClasses().get(name);
     }
 
@@ -771,7 +772,7 @@ public class ExtensionLoader<T> {
         } else if (isWrapperClass(clazz)) {  // 判断当前类是否是wrapper类
             // 缓存这个类
             cacheWrapperClass(clazz);
-        } else {  // 处理普通扩展类是activate类的情况
+        } else {  // 处理普通扩展类与activate类的情况
             // 验证扩展类是否具有无参构造器。
             // 若没有，则直接抛出异常，后面的代码就不会执行了。若有，则什么也不做
             clazz.getConstructor();

@@ -207,7 +207,7 @@ public class HeaderExchangeServer implements ExchangeServer {
 
     @Override
     public void reset(URL url) {
-        server.reset(url);
+        server.reset(url);  // 重置
         try {
             int currHeartbeat = getHeartbeat(getUrl());
             int currIdleTimeout = getIdleTimeout(getUrl());

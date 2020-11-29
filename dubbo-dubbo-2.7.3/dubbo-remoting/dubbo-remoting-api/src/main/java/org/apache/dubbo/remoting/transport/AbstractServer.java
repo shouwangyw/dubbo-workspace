@@ -68,7 +68,7 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
         this.accepts = url.getParameter(ACCEPTS_KEY, DEFAULT_ACCEPTS);
         this.idleTimeout = url.getParameter(IDLE_TIMEOUT_KEY, DEFAULT_IDLE_TIMEOUT);
         try {
-            doOpen();
+            doOpen();  // 创建并启动Netty Server
             if (logger.isInfoEnabled()) {
                 logger.info("Start " + getClass().getSimpleName() + " bind " + getBindAddress() + ", export " + getLocalAddress());
             }
@@ -134,7 +134,11 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
         } catch (Throwable t) {
             logger.error(t.getMessage(), t);
         }
-        super.setUrl(getUrl().addParameters(url.getParameters()));
+        // getUrl() 获取到之前服务暴露的url
+        // url.getParameters() 获取到当前服务暴露url中的元数据，写入到一个map中
+        // addParameters() 将指定map中的数据作为元数据写入到调用者URL中
+        // 结论：重置URL，即将后暴露的URL数据写入到之前暴露的URL中
+        super.setUrl(getUrl().addParameters(url.getParameters()));  // 重置URL
     }
 
     @Override
