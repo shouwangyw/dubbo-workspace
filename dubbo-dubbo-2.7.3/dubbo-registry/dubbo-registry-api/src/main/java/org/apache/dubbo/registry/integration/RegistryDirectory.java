@@ -169,7 +169,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         setConsumerUrl(url);
         CONSUMER_CONFIGURATION_LISTENER.addNotifyListener(this);
         serviceConfigurationListener = new ReferenceConfigurationListener(this, url);
-        registry.subscribe(url, this);
+        registry.subscribe(url, this); //
     }
 
 
@@ -221,22 +221,23 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                     }
                     return "";
                 }));
-
+        // 处理configurators分类节点情况
         List<URL> configuratorURLs = categoryUrls.getOrDefault(CONFIGURATORS_CATEGORY, Collections.emptyList());
         this.configurators = Configurator.toConfigurators(configuratorURLs).orElse(this.configurators);
-
+        // 处理routers分类节点情况
         List<URL> routerURLs = categoryUrls.getOrDefault(ROUTERS_CATEGORY, Collections.emptyList());
         toRouters(routerURLs).ifPresent(this::addRouters);
-
         // providers
+        // 处理providers分类节点情况
         List<URL> providerURLs = categoryUrls.getOrDefault(PROVIDERS_CATEGORY, Collections.emptyList());
+        // 从zk中获取最新的提供者更新到directory
         refreshOverrideAndInvoker(providerURLs);
     }
 
     private void refreshOverrideAndInvoker(List<URL> urls) {
         // mock zookeeper://xxx?mock=return null
         overrideDirectoryUrl();
-        refreshInvoker(urls);
+        refreshInvoker(urls);  //
     }
 
     /**
@@ -258,11 +259,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         if (invokerUrls.size() == 1
                 && invokerUrls.get(0) != null
                 && EMPTY_PROTOCOL.equals(invokerUrls.get(0).getProtocol())) {
-            this.forbidden = true; // Forbid to access
+            this.forbidden = true; // Forbid to access  禁止远程调用
             this.invokers = Collections.emptyList();
             routerChain.setInvokers(this.invokers);
-            destroyAllInvokers(); // Close all invokers
-        } else {
+            destroyAllInvokers(); // Close all invokers  销毁缓存中的所有invoker
+        } else {  // 处理远程调用的情况
             this.forbidden = false; // Allow to access
             Map<String, Invoker<T>> oldUrlInvokerMap = this.urlInvokerMap; // local reference
             if (invokerUrls == Collections.<URL>emptyList()) {
@@ -277,6 +278,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             if (invokerUrls.isEmpty()) {
                 return;
             }
+            // 获取到最新的invoker，key为zk中的节点名称，即url，value为该url对应的invoker
             Map<String, Invoker<T>> newUrlInvokerMap = toInvokers(invokerUrls);// Translate url list to Invoker map
 
             /**
@@ -292,15 +294,17 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                         .toString()));
                 return;
             }
-
+            // 从map中获取所有最新的invoker
             List<Invoker<T>> newInvokers = Collections.unmodifiableList(new ArrayList<>(newUrlInvokerMap.values()));
             // pre-route and build cache, notice that route cache should build on original Invoker list.
             // toMergeMethodInvokerMap() will wrap some invokers having different groups, those wrapped invokers not should be routed.
+            // 将所有当前可用的invoker写入到routerChain，即写入到了directory中
             routerChain.setInvokers(newInvokers);
             this.invokers = multiGroup ? toMergeInvokerList(newInvokers) : newInvokers;
             this.urlInvokerMap = newUrlInvokerMap;
 
             try {
+                // 销毁所有不可用的invoker
                 destroyUnusedInvokers(oldUrlInvokerMap, newUrlInvokerMap); // Close the unused Invoker
             } catch (Exception e) {
                 logger.warn("destroyUnusedInvokers error. ", e);
@@ -409,8 +413,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             }
             keys.add(key);
             // Cache key is url that does not merge with consumer side parameters, regardless of how the consumer combines parameters, if the server url changes, then refer again
+            // 获取缓存中的所有invoker
             Map<String, Invoker<T>> localUrlInvokerMap = this.urlInvokerMap; // local reference
+            // 从缓存中获取当前key(URL)所对应的invoker
             Invoker<T> invoker = localUrlInvokerMap == null ? null : localUrlInvokerMap.get(key);
+            // 若缓存中没有该invoker，则创建一个
             if (invoker == null) { // Not in the cache, refer again
                 try {
                     boolean enabled = true;
@@ -420,6 +427,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                         enabled = url.getParameter(ENABLED_KEY, true);
                     }
                     if (enabled) {
+                        // 通过当前的url创建一个invoker的委托对象
                         invoker = new InvokerDelegate<>(protocol.refer(serviceType, url), url, providerUrl);
                     }
                 } catch (Throwable t) {
@@ -499,10 +507,13 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * Close all invokers
      */
     private void destroyAllInvokers() {
+        // 获取缓存中的invoker
         Map<String, Invoker<T>> localUrlInvokerMap = this.urlInvokerMap; // local reference
         if (localUrlInvokerMap != null) {
+            // 遍历缓存中的所有invoker
             for (Invoker<T> invoker : new ArrayList<>(localUrlInvokerMap.values())) {
                 try {
+                    // 销毁当前遍历invoker
                     invoker.destroy();
                 } catch (Throwable t) {
                     logger.warn("Failed to destroy service " + serviceKey + " to provider " + invoker.getUrl(), t);
@@ -521,7 +532,10 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * @param newUrlInvokerMap
      */
     private void destroyUnusedInvokers(Map<String, Invoker<T>> oldUrlInvokerMap, Map<String, Invoker<T>> newUrlInvokerMap) {
+        // 若存放最新的invoker的map为空，则意味着没有可用的invoker，
+        // 则将缓存中的所有invoker全部销毁
         if (newUrlInvokerMap == null || newUrlInvokerMap.size() == 0) {
+            // 销毁缓存中的所有invoker
             destroyAllInvokers();
             return;
         }
@@ -529,7 +543,10 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         List<String> deleted = null;
         if (oldUrlInvokerMap != null) {
             Collection<Invoker<T>> newInvokers = newUrlInvokerMap.values();
+            // 遍历缓存中的所有invoker
             for (Map.Entry<String, Invoker<T>> entry : oldUrlInvokerMap.entrySet()) {
+                // 若最新的invoker中不包含当前遍历的invoker，
+                // 则说明这个遍历的invoker主机已经挂了，可以销毁了（将其放入到一个销毁列表中）
                 if (!newInvokers.contains(entry.getValue())) {
                     if (deleted == null) {
                         deleted = new ArrayList<>();
@@ -540,6 +557,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         }
 
         if (deleted != null) {
+            // 销毁deleted列表中的所有invoker
             for (String url : deleted) {
                 if (url != null) {
                     Invoker<T> invoker = oldUrlInvokerMap.remove(url);

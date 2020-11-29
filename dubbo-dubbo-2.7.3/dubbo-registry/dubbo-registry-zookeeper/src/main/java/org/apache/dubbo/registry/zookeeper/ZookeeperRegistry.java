@@ -133,7 +133,7 @@ public class ZookeeperRegistry extends FailbackRegistry {
     @Override
     public void doSubscribe(final URL url, final NotifyListener listener) {
         try {
-            if (ANY_VALUE.equals(url.getServiceInterface())) {
+            if (ANY_VALUE.equals(url.getServiceInterface())) {  // 处理interface属性值设置的为*的情况
                 String root = toRootPath();
                 ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
                 if (listeners == null) {
@@ -164,8 +164,10 @@ public class ZookeeperRegistry extends FailbackRegistry {
                                 Constants.CHECK_KEY, String.valueOf(false)), listener);
                     }
                 }
-            } else {
+            } else {  // 处理 interface 属性值为普通接口的情况
+                // 该urls列表中将来会存放所有分类节点下的所有子节点
                 List<URL> urls = new ArrayList<>();
+                // 遍历所有分类节点
                 for (String path : toCategoriesPath(url)) {
                     ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
                     if (listeners == null) {
@@ -177,12 +179,15 @@ public class ZookeeperRegistry extends FailbackRegistry {
                         listeners.putIfAbsent(listener, (parentPath, currentChilds) -> ZookeeperRegistry.this.notify(url, listener, toUrlsWithEmpty(url, parentPath, currentChilds)));
                         zkListener = listeners.get(listener);
                     }
+                    // 创建当前分类节点(持久节点)
                     zkClient.create(path, false);
+                    // 为当前分类节点添加“子节点列表变更的”watcher监听，返回值为当前分类节点的所有子节点列表
                     List<String> children = zkClient.addChildListener(path, zkListener);
                     if (children != null) {
                         urls.addAll(toUrlsWithEmpty(url, path, children));
                     }
                 }
+                // 主动调用各个分类节点的监听器，将zk中的数据更新到本地
                 notify(url, listener, urls);
             }
         } catch (Throwable e) {
@@ -271,8 +276,11 @@ public class ZookeeperRegistry extends FailbackRegistry {
     private List<URL> toUrlsWithoutEmpty(URL consumer, List<String> providers) {
         List<URL> urls = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(providers)) {
+            // 遍历所有子节点
             for (String provider : providers) {
+                // 解码
                 provider = URL.decode(provider);
+                // 处理子节点名称为url形式的情况
                 if (provider.contains(PROTOCOL_SEPARATOR)) {
                     URL url = URL.valueOf(provider);
                     if (UrlUtils.isMatch(consumer, url)) {
@@ -285,7 +293,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
     }
 
     private List<URL> toUrlsWithEmpty(URL consumer, String path, List<String> providers) {
+        // 获取到当前分类节点下的所有非空url
         List<URL> urls = toUrlsWithoutEmpty(consumer, providers);
+        // 若当前分类节点下没有子节点，则系统为其创建一个形如 empty://... 的空url
         if (urls == null || urls.isEmpty()) {
             int i = path.lastIndexOf(PATH_SEPARATOR);
             String category = i < 0 ? path : path.substring(i + 1);

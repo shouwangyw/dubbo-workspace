@@ -98,19 +98,21 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
     }
 
     public boolean isInjvmRefer(URL url) {
+        // 获取<dubbo:reference/>的scope属性
         String scope = url.getParameter(SCOPE_KEY);
         // Since injvm protocol is configured explicitly, we don't need to set any extra flag, use normal refer process.
+        // 若scope为local或injvm属性为true，则为本地调用
         if (SCOPE_LOCAL.equals(scope) || (url.getParameter(LOCAL_PROTOCOL, false))) {
             // if it's declared as local reference
             // 'scope=local' is equivalent to 'injvm=true', injvm will be deprecated in the future release
             return true;
-        } else if (SCOPE_REMOTE.equals(scope)) {
+        } else if (SCOPE_REMOTE.equals(scope)) {  // 若scope为remote，则为远程调用
             // it's declared as remote reference
             return false;
-        } else if (url.getParameter(GENERIC_KEY, false)) {
+        } else if (url.getParameter(GENERIC_KEY, false)) {  // 若generic属性为true，则为远程调用
             // generic invocation is not local reference
             return false;
-        } else if (getExporter(exporterMap, url) != null) {
+        } else if (getExporter(exporterMap, url) != null) {  // 若缓存map中存在与当前url相匹配的exporter，则为本地调用
             // by default, go through local reference if there's the service exposed locally
             return true;
         } else {

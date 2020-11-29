@@ -292,7 +292,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         removeFailedSubscribed(url, listener);
         try {
             // Sending a subscription request to the server side
-            doSubscribe(url, listener);
+            doSubscribe(url, listener);  // 发送订阅请求到zk
         } catch (Exception e) {
             Throwable t = e;
 
@@ -357,7 +357,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             throw new IllegalArgumentException("notify listener == null");
         }
         try {
-            doNotify(url, listener, urls);
+            doNotify(url, listener, urls);  //
         } catch (Exception t) {
             // Record a failed registration request to a failed list, retry regularly
             addFailedNotified(url, listener, urls);

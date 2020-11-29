@@ -197,6 +197,7 @@ public class RegistryProtocol implements Protocol {
         // url to export locally
         // 获取提供者URL
         URL providerUrl = getProviderUrl(originInvoker);
+
         // Subscribe the override data
         // FIXME When the provider subscribes, it will affect the scene : a certain JVM exposes the service and call
         //  the same service. Because the subscribed is cached key with the name of the service, it causes the
@@ -208,6 +209,7 @@ public class RegistryProtocol implements Protocol {
         providerUrl = overrideUrlWithConfig(providerUrl, overrideSubscribeListener);
         //export invoker  服务暴露
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker, providerUrl);
+
         // url to registry  获取注册中心实例
         final Registry registry = getRegistry(originInvoker);
         final URL registeredProviderUrl = getRegisteredProviderUrl(providerUrl, registryUrl);
@@ -220,6 +222,7 @@ public class RegistryProtocol implements Protocol {
             register(registryUrl, registeredProviderUrl);
             providerInvokerWrapper.setReg(true);
         }
+
         // Deprecated! Subscribe to override rules in 2.6.x or before.
         registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
 
@@ -386,7 +389,6 @@ public class RegistryProtocol implements Protocol {
         if (RegistryService.class.equals(type)) {
             return proxyFactory.getInvoker((T) registry, type, url);
         }
-
         // group="a,b" or group="*"
         Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));
         String group = qs.get(GROUP_KEY);
@@ -395,7 +397,7 @@ public class RegistryProtocol implements Protocol {
                 return doRefer(getMergeableCluster(), registry, type, url);
             }
         }
-        return doRefer(cluster, registry, type, url);
+        return doRefer(cluster, registry, type, url);  //
     }
 
     private Cluster getMergeableCluster() {
@@ -403,6 +405,7 @@ public class RegistryProtocol implements Protocol {
     }
 
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
+        // 1、创建一个动态Directory
         RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
         directory.setRegistry(registry);
         directory.setProtocol(protocol);
@@ -411,12 +414,15 @@ public class RegistryProtocol implements Protocol {
         URL subscribeUrl = new URL(CONSUMER_PROTOCOL, parameters.remove(REGISTER_IP_KEY), 0, type.getName(), parameters);
         if (!ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(REGISTER_KEY, true)) {
             directory.setRegisteredConsumerUrl(getRegisteredConsumerUrl(subscribeUrl, url));
+            // 将consumer注册到zk
             registry.register(directory.getRegisteredConsumerUrl());
         }
+        // 2、获取到RouterFactory的所有激活类创建的router实例，添加到directory中
         directory.buildRouterChain(subscribeUrl);
+        // 3、服务订阅(为三个分类节点添加watcher监听，并获取当前zk中三个分类节点下的所有子节点url)
         directory.subscribe(subscribeUrl.addParameter(CATEGORY_KEY,
                 PROVIDERS_CATEGORY + "," + CONFIGURATORS_CATEGORY + "," + ROUTERS_CATEGORY));
-
+        // 4、将动态列表directory中invoker列表抽象(创建)出一个具有容错与降级功能的invoker
         Invoker invoker = cluster.join(directory);
         ProviderConsumerRegTable.registerConsumer(invoker, url, subscribeUrl, directory);
         return invoker;

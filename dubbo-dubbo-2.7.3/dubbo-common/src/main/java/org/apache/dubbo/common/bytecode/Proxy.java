@@ -200,7 +200,7 @@ public abstract class Proxy {
             ccm.setSuperClass(Proxy.class);
             ccm.addMethod("public Object newInstance(" + InvocationHandler.class.getName() + " h){ return new " + pcn + "($1); }");
             Class<?> pc = ccm.toClass();
-            proxy = (Proxy) pc.newInstance();
+            proxy = (Proxy) pc.newInstance();  // 创建了代理对象class的实例
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
