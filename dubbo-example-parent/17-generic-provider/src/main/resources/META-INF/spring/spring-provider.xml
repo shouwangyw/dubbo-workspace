@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://dubbo.apache.org/schema/dubbo
+       http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
+
+  <dubbo:application name="17-generic-provider" />
+  <!-- 声明注册中心：单机版zk -->
+  <dubbo:registry address="zookeeper://100.120.7.151:2181" />
+  <dubbo:protocol name="dubbo" port="20880" />
+  <!-- 注册GenericServiceImpl -->
+  <bean id="someService" class="com.yw.provider.GenericServiceImpl" />
+  <!-- 泛化服务 -->
+  <dubbo:service interface="com.yw.service.SomeService" ref="someService" generic="true" />
+
+</beans>

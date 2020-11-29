@@ -59,6 +59,8 @@
     <module>14-wrapper</module>
     <module>15-activate</module>
     <module>16-javassist</module>
+    <module>17-generic-provider</module>
+    <module>17-generic-consumer</module>
   </modules>
 
   <dependencies>
