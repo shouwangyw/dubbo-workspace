@@ -55,7 +55,7 @@ public class ConsumerContextFilter extends ListenableFilter {
         }
         try {
             RpcContext.removeServerContext();
-            return invoker.invoke(invocation);
+            return invoker.invoke(invocation);  //
         } finally {
             RpcContext.removeContext();
         }

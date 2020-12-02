@@ -72,7 +72,7 @@ public class Transporters {
         } else {
             handler = new ChannelHandlerDispatcher(handlers);
         }
-        return getTransporter().connect(url, handler);
+        return getTransporter().connect(url, handler);  //
     }
 
     public static Transporter getTransporter() {

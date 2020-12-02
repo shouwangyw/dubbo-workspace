@@ -71,20 +71,22 @@ public class MockClusterInvoker<T> implements Invoker<T> {
     @Override
     public Result invoke(Invocation invocation) throws RpcException {
         Result result = null;
-
-        String value = directory.getUrl().getMethodParameter(invocation.getMethodName(), MOCK_KEY, Boolean.FALSE.toString()).trim();
+        // 获取mock属性值
+        String value = directory.getUrl().getMethodParameter(invocation.getMethodName(),
+                MOCK_KEY, Boolean.FALSE.toString()).trim();
+        // 若没有设置mock属性，或mock属性值为false，则不具有降级功能
         if (value.length() == 0 || value.equalsIgnoreCase("false")) {
-            //no mock
+            //no mock  远程调用(不会降级)
             result = this.invoker.invoke(invocation);
         } else if (value.startsWith("force")) {
             if (logger.isWarnEnabled()) {
                 logger.warn("force-mock: " + invocation.getMethodName() + " force-mock enabled , url : " + directory.getUrl());
             }
-            //force:direct mock
+            //force:direct mock  直接降级
             result = doMockInvoke(invocation, null);
         } else {
             //fail-mock
-            try {
+            try {  // 远程调用
                 result = this.invoker.invoke(invocation);
             } catch (RpcException e) {
                 if (e.isBiz()) {
@@ -94,6 +96,7 @@ public class MockClusterInvoker<T> implements Invoker<T> {
                 if (logger.isWarnEnabled()) {
                     logger.warn("fail-mock: " + invocation.getMethodName() + " fail-mock enabled , url : " + directory.getUrl(), e);
                 }
+                // 服务降级
                 result = doMockInvoke(invocation, e);
             }
         }

@@ -178,10 +178,12 @@ public class ConfigUtils {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static String getProperty(String key, String defaultValue) {
+        // 获取系统变量的值
         String value = System.getProperty(key);
         if (value != null && value.length() > 0) {
             return value;
         }
+        // 获取属性文件中的该变量值
         Properties properties = getProperties();
         return replaceProperty(properties.getProperty(key, defaultValue), (Map) properties);
     }

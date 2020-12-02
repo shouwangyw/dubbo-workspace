@@ -154,7 +154,7 @@ public class ProtocolFilterWrapper implements Protocol {
 
         @Override
         public Result invoke(Invocation invocation) throws RpcException {
-            Result asyncResult = filterInvoker.invoke(invocation);
+            Result asyncResult = filterInvoker.invoke(invocation);  // 返回一个异步结果
 
             asyncResult = asyncResult.whenCompleteWithContext((r, t) -> {
                 for (int i = filters.size() - 1; i >= 0; i--) {

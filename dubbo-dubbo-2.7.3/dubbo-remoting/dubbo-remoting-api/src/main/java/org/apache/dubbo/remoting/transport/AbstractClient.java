@@ -57,7 +57,7 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
         needReconnect = url.getParameter(Constants.SEND_RECONNECT_KEY, false);
 
         try {
-            doOpen();
+            doOpen();  //
         } catch (Throwable t) {
             close();
             throw new RemotingException(url.toInetSocketAddress(), null,
@@ -167,14 +167,14 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
     @Override
     public void send(Object message, boolean sent) throws RemotingException {
         if (needReconnect && !isConnected()) {
-            connect();
+            connect();  // 连接Server
         }
         Channel channel = getChannel();
         //TODO Can the value returned by getChannel() be null? need improvement.
         if (channel == null || !channel.isConnected()) {
             throw new RemotingException(this, "message can not send, because channel is closed . url:" + getUrl());
         }
-        channel.send(message, sent);
+        channel.send(message, sent);  // 发送请求
     }
 
     protected void connect() throws RemotingException {

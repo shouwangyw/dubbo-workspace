@@ -79,7 +79,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
 
     void handleRequest(final ExchangeChannel channel, Request req) throws RemotingException {
         Response res = new Response(req.getId(), req.getVersion());
-        if (req.isBroken()) {
+        if (req.isBroken()) {  // 若请求过程中发生了异常，则在这里处理
             Object data = req.getData();
 
             String msg;
@@ -93,11 +93,11 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
             res.setErrorMessage("Fail to decode request due to: " + msg);
             res.setStatus(Response.BAD_REQUEST);
 
-            channel.send(res);
+            channel.send(res);  // 将包含有异常信息的响应返回
             return;
         }
         // find handler by message class.
-        Object msg = req.getData();
+        Object msg = req.getData();  // 获取RpcInvocation
         try {
             CompletionStage<Object> future = handler.reply(channel, msg);
             future.whenComplete((appResult, t) -> {
@@ -109,7 +109,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                         res.setStatus(Response.SERVICE_ERROR);
                         res.setErrorMessage(StringUtils.toString(t));
                     }
-                    channel.send(res);
+                    channel.send(res);  // 将真正的响应结果返回
                 } catch (RemotingException e) {
                     logger.warn("Send result to consumer failed, channel is " + channel + ", msg is " + e);
                 } finally {
@@ -183,19 +183,19 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());
         final ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
         try {
-            if (message instanceof Request) {
+            if (message instanceof Request) {  // 处理message为请求的情况
                 // handle request.
                 Request request = (Request) message;
                 if (request.isEvent()) {
                     handlerEvent(channel, request);
                 } else {
                     if (request.isTwoWay()) {
-                        handleRequest(exchangeChannel, request);
+                        handleRequest(exchangeChannel, request);  // 处理请求
                     } else {
                         handler.received(exchangeChannel, request.getData());
                     }
                 }
-            } else if (message instanceof Response) {
+            } else if (message instanceof Response) {   // 处理message为响应的情况
                 handleResponse(channel, (Response) message);
             } else if (message instanceof String) {
                 if (isClientSide(channel)) {

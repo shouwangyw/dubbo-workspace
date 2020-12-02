@@ -35,7 +35,7 @@ public class MockClusterWrapper implements Cluster {
 
     @Override
     public <T> Invoker<T> join(Directory<T> directory) throws RpcException {
-        return new MockClusterInvoker<T>(directory,
+        return new MockClusterInvoker<T>(directory,  // 创建一个具有降级功能的invoker
                 this.cluster.join(directory));
     }
 

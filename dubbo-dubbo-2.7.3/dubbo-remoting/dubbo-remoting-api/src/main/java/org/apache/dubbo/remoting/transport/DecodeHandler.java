@@ -37,17 +37,17 @@ public class DecodeHandler extends AbstractChannelHandlerDelegate {
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
         if (message instanceof Decodeable) {
-            decode(message);
+            decode(message);  // 解码消息
         }
 
         if (message instanceof Request) {
-            decode(((Request) message).getData());
+            decode(((Request) message).getData());   // 解码RpcInvocation
         }
 
         if (message instanceof Response) {
-            decode(((Response) message).getResult());
+            decode(((Response) message).getResult());  // 解码响应结果
         }
-
+        // 此时的message是经过解码的
         handler.received(channel, message);
     }
 

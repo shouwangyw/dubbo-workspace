@@ -152,7 +152,7 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
 
         try {
-            return doInvoke(invocation);
+            return doInvoke(invocation);  //
         } catch (InvocationTargetException e) { // biz exception
             Throwable te = e.getTargetException();
             if (te == null) {
