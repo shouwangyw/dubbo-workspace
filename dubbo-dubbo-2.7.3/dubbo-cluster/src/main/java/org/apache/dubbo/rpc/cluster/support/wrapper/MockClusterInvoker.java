@@ -72,8 +72,7 @@ public class MockClusterInvoker<T> implements Invoker<T> {
     public Result invoke(Invocation invocation) throws RpcException {
         Result result = null;
         // 获取mock属性值
-        String value = directory.getUrl().getMethodParameter(invocation.getMethodName(),
-                MOCK_KEY, Boolean.FALSE.toString()).trim();
+        String value = directory.getUrl().getMethodParameter(invocation.getMethodName(), MOCK_KEY, Boolean.FALSE.toString()).trim();
         // 若没有设置mock属性，或mock属性值为false，则不具有降级功能
         if (value.length() == 0 || value.equalsIgnoreCase("false")) {
             //no mock  远程调用(不会降级)
@@ -107,8 +106,9 @@ public class MockClusterInvoker<T> implements Invoker<T> {
     private Result doMockInvoke(Invocation invocation, RpcException e) {
         Result result = null;
         Invoker<T> minvoker;
-
+        // 重新再从zk中获取一次最新的invoker
         List<Invoker<T>> mockInvokers = selectMockInvoker(invocation);
+        // 若仍没有可用的invoker，则创建一个MockInvoker，否则返回第一个可用的invoker
         if (CollectionUtils.isEmpty(mockInvokers)) {
             minvoker = (Invoker<T>) new MockInvoker(directory.getUrl(), directory.getInterface());
         } else {

@@ -95,10 +95,12 @@ final public class MockInvoker<T> implements Invoker<T> {
 
     @Override
     public Result invoke(Invocation invocation) throws RpcException {
+        // 获取<dubbo:method/>中的mock属性
         String mock = getUrl().getParameter(invocation.getMethodName() + "." + MOCK_KEY);
         if (invocation instanceof RpcInvocation) {
             ((RpcInvocation) invocation).setInvoker(this);
         }
+        // 若<dubbo:method/>中没有设置mock，则获取<dubbo:reference/>中的mock
         if (StringUtils.isBlank(mock)) {
             mock = getUrl().getParameter(MOCK_KEY);
         }
@@ -106,8 +108,11 @@ final public class MockInvoker<T> implements Invoker<T> {
         if (StringUtils.isBlank(mock)) {
             throw new RpcException(new IllegalAccessException("mock can not be null. url :" + url));
         }
+        // 规范化mock值
         mock = normalizeMock(URL.decode(mock));
+        // 处理mock以return开头的情况
         if (mock.startsWith(RETURN_PREFIX)) {
+            // 取return后面的内容
             mock = mock.substring(RETURN_PREFIX.length()).trim();
             try {
                 Type[] returnTypes = RpcUtils.getReturnTypes(invocation);
@@ -117,6 +122,7 @@ final public class MockInvoker<T> implements Invoker<T> {
                 throw new RpcException("mock return invoke error. method :" + invocation.getMethodName()
                         + ", mock:" + mock + ", url: " + url, ew);
             }
+            // 处理mock以throw开头的情况
         } else if (mock.startsWith(THROW_PREFIX)) {
             mock = mock.substring(THROW_PREFIX.length()).trim();
             if (StringUtils.isBlank(mock)) {
@@ -125,8 +131,9 @@ final public class MockInvoker<T> implements Invoker<T> {
                 Throwable t = getThrowable(mock);
                 throw new RpcException(RpcException.BIZ_EXCEPTION, t);
             }
-        } else { //impl mock
+        } else { //impl mock  调用自定义降级类
             try {
+                // 加载并实例化本地降级类
                 Invoker<T> invoker = getInvoker(mock);
                 return invoker.invoke(invocation);
             } catch (Throwable t) {
@@ -162,9 +169,11 @@ final public class MockInvoker<T> implements Invoker<T> {
         if (invoker != null) {
             return invoker;
         }
-
+        // 加载指定业务接口
         Class<T> serviceType = (Class<T>) ReflectUtils.forName(url.getServiceInterface());
+        // 构建出降级类，再加载并实例化
         T mockObject = (T) getMockObject(mockService, serviceType);
+        // 将降级实例封装为一个invoker
         invoker = PROXY_FACTORY.getInvoker(mockObject, serviceType, url);
         if (MOCK_MAP.size() < 10000) {
             MOCK_MAP.put(mockService, invoker);
@@ -174,17 +183,20 @@ final public class MockInvoker<T> implements Invoker<T> {
 
     @SuppressWarnings("unchecked")
     public static Object getMockObject(String mockService, Class serviceType) {
+        // 若mockService的值为default，则构建出降级类名
         if (ConfigUtils.isDefault(mockService)) {
             mockService = serviceType.getName() + "Mock";
         }
-
+        // 加载降级类
         Class<?> mockClass = ReflectUtils.forName(mockService);
+        // 若降级类没有实现业务接口，则抛出异常
         if (!serviceType.isAssignableFrom(mockClass)) {
             throw new IllegalStateException("The mock class " + mockClass.getName() +
                     " not implement interface " + serviceType.getName());
         }
 
         try {
+            // 实例化
             return mockClass.newInstance();
         } catch (InstantiationException e) {
             throw new IllegalStateException("No default constructor from mock class " + mockClass.getName(), e);
@@ -209,32 +221,30 @@ final public class MockInvoker<T> implements Invoker<T> {
      * @return normalized mock string
      */
     public static String normalizeMock(String mock) {
-        if (mock == null) {
+        if (mock == null) {  // mock为null，则返回null
             return mock;
         }
-
         mock = mock.trim();
 
-        if (mock.length() == 0) {
+        if (mock.length() == 0) {  // mock为空串，则返回空串
             return mock;
         }
-
-        if (RETURN_KEY.equalsIgnoreCase(mock)) {
+        if (RETURN_KEY.equalsIgnoreCase(mock)) {  // mock为return，则返回returnnull
             return RETURN_PREFIX + "null";
         }
-
+        // mock为true、default、fail或force，则返回default
         if (ConfigUtils.isDefault(mock) || "fail".equalsIgnoreCase(mock) || "force".equalsIgnoreCase(mock)) {
             return "default";
         }
-
+        // mock以fail:开头，则返回fail:后面的子串
         if (mock.startsWith(FAIL_PREFIX)) {
             mock = mock.substring(FAIL_PREFIX.length()).trim();
         }
-
+        // mock以force:开头，则返回force:后面的子串
         if (mock.startsWith(FORCE_PREFIX)) {
             mock = mock.substring(FORCE_PREFIX.length()).trim();
         }
-
+        // 若mock以return或throw，则将反引号替换为双引号
         if (mock.startsWith(RETURN_PREFIX) || mock.startsWith(THROW_PREFIX)) {
             mock = mock.replace('`', '"');
         }

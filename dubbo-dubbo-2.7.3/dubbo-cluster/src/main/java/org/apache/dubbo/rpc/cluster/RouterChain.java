@@ -47,13 +47,14 @@ public class RouterChain<T> {
     }
 
     private RouterChain(URL url) {
+        // 获取RouterFactory的所有激活类实例
         List<RouterFactory> extensionFactories = ExtensionLoader.getExtensionLoader(RouterFactory.class)
                 .getActivateExtension(url, (String[]) null);
 
-        List<Router> routers = extensionFactories.stream()
-                .map(factory -> factory.getRouter(url))
-                .collect(Collectors.toList());
-
+        List<Router> routers = extensionFactories.stream()  // 生成一个Stream，元素是factory
+                .map(factory -> factory.getRouter(url)) // 将Stream中的factory映射为该factory生成的router
+                .collect(Collectors.toList());  // 将Stream再变为List
+        // 将创建的router列表初始化到Directory的routerChain中
         initWithRouters(routers);
     }
 

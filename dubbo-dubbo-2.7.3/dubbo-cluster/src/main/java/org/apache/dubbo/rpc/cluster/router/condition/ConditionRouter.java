@@ -169,24 +169,36 @@ public class ConditionRouter extends AbstractRouter {
     @Override
     public <T> List<Invoker<T>> route(List<Invoker<T>> invokers, URL url, Invocation invocation)
             throws RpcException {
+        // 若路由规则中的enabled属性为false(即当前路由规则等同于没有)，则返回所有invoker
         if (!enabled) {
             return invokers;
         }
 
+        // 若没有提供者，则返回空
         if (CollectionUtils.isEmpty(invokers)) {
             return invokers;
         }
         try {
+            // matcherWhen()方法用于判断当前的消费者是否与箭头(=>)前面部分相匹配，
+            // 若不匹配，则说明当前规则对当前消费者不起作用，即无需通过路由过滤，直接返回所有invoker
             if (!matchWhen(url, invocation)) {
                 return invokers;
             }
+            // 代码走到这里，说明当前消费者已经与箭头(=>)前面部分匹配上了，现在看箭头(=>)后面的情况了
+            // 该result集合将来用于存放通过路由过滤的invoker
             List<Invoker<T>> result = new ArrayList<Invoker<T>>();
+            // thenCondition 中存放的是箭头(=>)后面部分，若其为null，
+            // 则说明当前规则为黑/白名单，即所有invoker均不可用
             if (thenCondition == null) {
                 logger.warn("The current consumer in the service blacklist. consumer: " + NetUtils.getLocalHost() + ", service: " + url.getServiceKey());
                 return result;
             }
+            // 代码走到这里，说明当前消费者已经匹配上了箭头(=>)前面，且后面也不为空，
+            // 此时就需要遍历所有invoker，去尝试着匹配箭头(=>)后的规则条件
             for (Invoker<T> invoker : invokers) {
+                // matchThen() 判断是否与箭头(=>)后的条件相匹配
                 if (matchThen(invoker.getUrl(), url)) {
+                    // 匹配上了，则通过路由过滤，表示其是可用的
                     result.add(invoker);
                 }
             }

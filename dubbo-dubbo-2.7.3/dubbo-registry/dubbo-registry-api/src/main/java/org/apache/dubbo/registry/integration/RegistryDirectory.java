@@ -224,9 +224,13 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         // 处理configurators分类节点情况
         List<URL> configuratorURLs = categoryUrls.getOrDefault(CONFIGURATORS_CATEGORY, Collections.emptyList());
         this.configurators = Configurator.toConfigurators(configuratorURLs).orElse(this.configurators);
+
         // 处理routers分类节点情况
         List<URL> routerURLs = categoryUrls.getOrDefault(ROUTERS_CATEGORY, Collections.emptyList());
-        toRouters(routerURLs).ifPresent(this::addRouters);
+        toRouters(routerURLs)  // 返回Optional
+                // 若Optional中封装的对象不空，则调用Lambda的实例方法引用addRouters()，即将这个路由添加到directory
+                .ifPresent(this::addRouters);
+
         // providers
         // 处理providers分类节点情况
         List<URL> providerURLs = categoryUrls.getOrDefault(PROVIDERS_CATEGORY, Collections.emptyList());
@@ -347,15 +351,20 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
         List<Router> routers = new ArrayList<>();
         for (URL url : urls) {
+            // 若当前url以empty作为protocol，则说明其不是一个有效url
             if (EMPTY_PROTOCOL.equals(url.getProtocol())) {
                 continue;
             }
+            // 获取到url中的router属性值，当前值为condition，表示这是一个条件路由
             String routerType = url.getParameter(ROUTER_KEY);
             if (routerType != null && routerType.length() > 0) {
+                // 将路由类型作为url的protocol，即当前的url变为了condition://...
                 url = url.setProtocol(routerType);
             }
             try {
+                // 创建路由
                 Router router = ROUTER_FACTORY.getRouter(url);
+                // 将该路由实例记录下来
                 if (!routers.contains(router)) {
                     routers.add(router);
                 }
@@ -363,7 +372,6 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 logger.error("convert router url to router error, url: " + url, t);
             }
         }
-
         return Optional.of(routers);
     }
 
@@ -593,12 +601,11 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         List<Invoker<T>> invokers = null;
         try {
             // Get invokers from cache, only runtime routers will be executed.
+            // 将路由规则应用到所有invokers中，过滤掉不满足规则的invoker
             invokers = routerChain.route(getConsumerUrl(), invocation);
         } catch (Throwable t) {
             logger.error("Failed to execute router: " + getUrl() + ", cause: " + t.getMessage(), t);
         }
-
-
         // FIXME Is there any need of failing back to Constants.ANY_VALUE or the first available method invokers when invokers is null?
         /*Map<String, List<Invoker<T>>> localMethodInvokerMap = this.methodInvokerMap; // local reference
         if (localMethodInvokerMap != null && localMethodInvokerMap.size() > 0) {
