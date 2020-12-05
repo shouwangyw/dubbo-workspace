@@ -64,9 +64,14 @@ public class ForkingClusterInvoker<T> extends AbstractClusterInvoker<T> {
     public Result doInvoke(final Invocation invocation, List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
         try {
             checkInvokers(invokers, invocation);
+            // 记录用于执行分叉任务的invoker
             final List<Invoker<T>> selected;
+            // 获取forks属性值
             final int forks = getUrl().getParameter(FORKS_KEY, DEFAULT_FORKS);
+            // 获取timeout属性值，其是消费超时阈值
             final int timeout = getUrl().getParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT);
+            // 若分叉数量<=0，或>=invoker的总数量，则将所有invoker全部选择出，去执行分叉任务
+            // 否则，采用负载均衡方式选择出部分invoker
             if (forks <= 0 || forks >= invokers.size()) {
                 selected = invokers;
             } else {
@@ -80,25 +85,34 @@ public class ForkingClusterInvoker<T> extends AbstractClusterInvoker<T> {
                 }
             }
             RpcContext.getContext().setInvokers((List) selected);
+            // 计数器
             final AtomicInteger count = new AtomicInteger();
+            // 结果队列：其中存放着所有分叉invoker执行完毕后的结果
             final BlockingQueue<Object> ref = new LinkedBlockingQueue<>();
+            // 遍历所有用于执行分叉任务的invoker，为每个invoker的远程调用
+            // 创建一个任务，让所有分叉并行执行
             for (final Invoker<T> invoker : selected) {
                 executor.execute(new Runnable() {
                     @Override
                     public void run() {
                         try {
+                            // 远程调用
                             Result result = invoker.invoke(invocation);
+                            // 将调用结果写入队列
                             ref.offer(result);
                         } catch (Throwable e) {
+                            // 若发生异常，则异常计数器增一
                             int value = count.incrementAndGet();
+                            // 若所有分叉全部执行失败，则将异常放入到队列
                             if (value >= selected.size()) {
                                 ref.offer(e);
                             }
                         }
                     }
                 });
-            }
+            }  // end-for
             try {
+                // 该方法是阻塞方法，当ref队列中有任意元素存在，则阻塞解除，或等待到timeout后阻塞解除
                 Object ret = ref.poll(timeout, TimeUnit.MILLISECONDS);
                 if (ret instanceof Throwable) {
                     Throwable e = (Throwable) ret;

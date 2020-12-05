@@ -56,29 +56,40 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Result doInvoke(Invocation invocation, final List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
         List<Invoker<T>> copyInvokers = invokers;
+        // 检测是否具有可用的invoker，若没有，则抛出RpcException，跳转到降级代码
         checkInvokers(copyInvokers, invocation);
+        // 获取远程调用的方法名
         String methodName = RpcUtils.getMethodName(invocation);
+        // 获取可以远程调用的次数，reties属性值是重试的次数
         int len = getUrl().getMethodParameter(methodName, RETRIES_KEY, DEFAULT_RETRIES) + 1;
         if (len <= 0) {
             len = 1;
         }
         // retry loop.
         RpcException le = null; // last exception.
+        // 该集合中用于存放已经被尝试着调用过的invoker，其中除了最后一个外，
+        // 其它的invoker都是不可用的，尝试失败的
         List<Invoker<T>> invoked = new ArrayList<Invoker<T>>(copyInvokers.size()); // invoked invokers.
         Set<String> providers = new HashSet<String>(len);
         for (int i = 0; i < len; i++) {
             //Reselect before retry to avoid a change of candidate `invokers`.
             //NOTE: if `invokers` changed, then `invoked` also lose accuracy.
+            // 对非第一次尝试的操作
             if (i > 0) {
                 checkWhetherDestroyed();
+                // 对现有的invoker列表进行重新路由，过滤出最新的invoker
+                // 因为路由规则是通过管控平台动态设置的，随时可能发生变化
                 copyInvokers = list(invocation);
                 // check again
                 checkInvokers(copyInvokers, invocation);
-            } // 负载均衡
+            }
+            // 负载均衡 这里的第四个参数invoked中存放的全部是不可用的invoker
             Invoker<T> invoker = select(loadbalance, invocation, copyInvokers, invoked);
+            // 记录下这次选择的invoker
             invoked.add(invoker);
             RpcContext.getContext().setInvokers((List) invoked);
-            try { // 远程调用
+            try {
+                // 远程调用
                 Result result = invoker.invoke(invocation);
                 if (le != null && logger.isWarnEnabled()) {
                     logger.warn("Although retry the method " + methodName
@@ -102,7 +113,7 @@ public class FailoverClusterInvoker<T> extends AbstractClusterInvoker<T> {
             } finally {
                 providers.add(invoker.getUrl().getAddress());
             }
-        }
+        }  // end-for
         throw new RpcException(le.getCode(), "Failed to invoke the method "
                 + methodName + " in the service " + getInterface().getName()
                 + ". Tried " + len + " times of the providers " + providers
