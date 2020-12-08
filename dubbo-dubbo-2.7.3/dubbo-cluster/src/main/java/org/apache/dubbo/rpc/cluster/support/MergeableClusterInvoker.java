@@ -63,13 +63,17 @@ public class MergeableClusterInvoker<T> extends AbstractClusterInvoker<T> {
     @Override
     protected Result doInvoke(Invocation invocation, List<Invoker<T>> invokers, LoadBalance loadbalance) throws RpcException {
         checkInvokers(invokers, invocation);
+        // 获取merger属性值
         String merger = getUrl().getMethodParameter(invocation.getMethodName(), MERGER_KEY);
+        // 处理merger属性为空的情况
         if (ConfigUtils.isEmpty(merger)) { // If a method doesn't have a merger, only invoke one Group
+            // 获取第一个可用的invoker
             for (final Invoker<T> invoker : invokers) {
                 if (invoker.isAvailable()) {
                     try {
                         return invoker.invoke(invocation);
                     } catch (RpcException e) {
+                        // 若所有invoker均不可用，这里是不会抛出异常的，只有在远程调用过程中发生了异常，这里才会抛出异常
                         if (e.isNoInvokerAvailableAfterFilter()) {
                             log.debug("No available provider for service" + directory.getUrl().getServiceKey() + " on group " + invoker.getUrl().getParameter(GROUP_KEY) + ", will continue to try another group.");
                         } else {
@@ -78,11 +82,13 @@ public class MergeableClusterInvoker<T> extends AbstractClusterInvoker<T> {
                     }
                 }
             }
+            // 对于所有都不可用的情况，直接返回invokers中迭代出的第一个invoker，无论其是否可用
             return invokers.iterator().next().invoke(invocation);
-        }
+        }  // end-if
 
+        // 处理merger属性不空的情况
         Class<?> returnType;
-        try {
+        try { // 获取RPC远程调用方法的返回值类型
             returnType = getInterface().getMethod(
                     invocation.getMethodName(), invocation.getParameterTypes()).getReturnType();
         } catch (NoSuchMethodException e) {
@@ -90,12 +96,14 @@ public class MergeableClusterInvoker<T> extends AbstractClusterInvoker<T> {
         }
 
         Map<String, Result> results = new HashMap<>();
+        // 遍历所有invoker，将执行结果写入到results集合中
         for (final Invoker<T> invoker : invokers) {
             RpcInvocation subInvocation = new RpcInvocation(invocation, invoker);
             subInvocation.setAttachment(ASYNC_KEY, "true");
             results.put(invoker.getUrl().getServiceKey(), invoker.invoke(subInvocation));
         }
 
+        // 将results中的结果进行合并
         Object result = null;
 
         List<Result> resultList = new ArrayList<Result>(results.size());

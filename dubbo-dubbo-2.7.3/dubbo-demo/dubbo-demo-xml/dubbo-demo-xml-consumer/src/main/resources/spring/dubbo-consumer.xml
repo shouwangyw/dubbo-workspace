@@ -21,14 +21,23 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
        http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
 
-    <dubbo:application name="demo-consumer"/>
+  <dubbo:application name="demo-consumer"/>
 
-    <dubbo:registry address="zookeeper://192.168.254.120:2181" />
+  <dubbo:registry address="zookeeper://192.168.254.120:2181"/>
 
-    <!-- generate proxy for the remote service, then demoService can be used in the same way as the
-    local regular interface -->
-<!--    <dubbo:reference id="demoService" check="false" mock="true" interface="org.apache.dubbo.demo.DemoService"/>-->
-    <dubbo:reference id="demoService" check="false" cluster="failfast" interface="org.apache.dubbo.demo.DemoService"/>
-    <dubbo:reference id="someService" check="false" interface="org.apache.dubbo.demo.SomeService"/>
+  <!-- generate proxy for the remote service, then demoService can be used in the same way as the
+  local regular interface -->
+  <!--    <dubbo:reference id="demoService" check="false" mock="true" interface="org.apache.dubbo.demo.DemoService"/>-->
+  <dubbo:reference id="demoService" check="false" cluster="failfast" interface="org.apache.dubbo.demo.DemoService"/>
+  <dubbo:reference id="someService" check="false" loadbalance="consistenthash"
+                   interface="org.apache.dubbo.demo.SomeService">
+    <dubbo:method name="sayGood">
+      <!-- 使用SomeService的sayGood方法的1,2两个参数(depart、age)的实参值计算hash，
+            然后根据计算出的hash去找到对应的主机(虚拟主机 => 物理主机 ) -->
+      <dubbo:parameter key="hash.arguments" value="1,2" />
+      <!-- 为每一个物理主机，虚拟出来320个(默认是160个) -->
+      <dubbo:parameter key="hash.nodes" value="320" />
+    </dubbo:method>
+  </dubbo:reference>
 
 </beans>

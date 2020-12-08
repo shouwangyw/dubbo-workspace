@@ -20,4 +20,5 @@ public interface SomeService {
 
     String sayHi(String name);
 
+    String sayGood(String name, String depart, int age);
 }

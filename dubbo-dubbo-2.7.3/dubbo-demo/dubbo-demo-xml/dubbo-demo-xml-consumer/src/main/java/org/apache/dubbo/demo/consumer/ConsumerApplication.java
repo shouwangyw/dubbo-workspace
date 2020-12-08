@@ -35,5 +35,6 @@ public class ConsumerApplication {
         SomeService someService = context.getBean("someService", SomeService.class);
         String hi = someService.sayHi("world");
         System.out.println("result =================== " + hi);
+        String good = someService.sayGood("Zhang San", "IT", 23);
     }
 }

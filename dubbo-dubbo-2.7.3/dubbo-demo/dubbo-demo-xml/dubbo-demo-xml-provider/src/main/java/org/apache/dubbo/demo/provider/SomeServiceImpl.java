@@ -30,4 +30,9 @@ public class SomeServiceImpl implements SomeService {
         return "Hi " + name + ", response from provider: " + RpcContext.getContext().getLocalAddress();
     }
 
+    @Override
+    public String sayGood(String name, String depart, int age) {
+        return name + " is good, depart = " + depart + ", age = " + age;
+    }
+
 }
